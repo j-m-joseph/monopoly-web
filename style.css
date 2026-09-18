@@ -1,0 +1,10 @@
+body {
+    background-color: rgb(5, 69, 5);
+    font-family: Arial;
+    /*whole page uses this font*/
+}
+
+h1 {
+    color: white;
+    /*spelling change*/
+}
