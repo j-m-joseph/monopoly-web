@@ -8,3 +8,38 @@ h1 {
     color: white;
     /*spelling change*/
 }
+
+#board {
+    background-color: rgb(178, 221, 178);
+    position: relative;
+    /*corners of the board arereference point
+    squares sit relavive to the corners of the board*/
+    width: 500px;
+    /*width*/
+    height: 500px;
+    /*height of board*/
+    /*circle must have matching height and width*/
+    margin: 50px auto;
+    /*adds 50px space above and below
+    the 900px is split evenly amongst the left and right margins so 450px on either side */
+}
+
+#board > .square {
+    /* other things will be in the board that are not square.
+    This will make sure only square things are altered */
+    background-color: rgb(79, 188, 79);
+    text-align: center;
+    font-size: 30px;
+    
+    position: absolute;
+    /* takes squares out of "flow" so they can be psitioned manually and that happens with transform in JS */
+    top: 50%;
+    left: 50%;
+    /* puts the corner of the square in the centre of the board */
+    margin: -30px 0 0 -30px;
+    /* Top, Right, Bottom, Left 
+    fixes teh corner problrm and put the centre of the square in the centre of the board*/
+    width: 60px;
+    height: 60px;
+    /*the actual playing squares*/
+}
