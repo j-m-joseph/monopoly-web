@@ -64,6 +64,8 @@ function generateBoard(totalSquares) {
  const diceDiv = document.getElementById("dice");
 
  let playerList;
+ let currentPlayer = 0;
+ //start at 0 for player 1
  
  //add event listener
  startButton.addEventListener("click", function() {
@@ -105,6 +107,16 @@ function generateBoard(totalSquares) {
 rollButton.addEventListener("click", function() {
     const result = rollDice();
     console.log(result);
+    const player = playerList[currentPlayer];
+    //recording whose turn it is 
+    console.log(player.name + "'s turn");
+    //log player's name in the console
+    currentPlayer = (currentPlayer + 1) % playerList.length;
+    //advance to next player
+    //next index
+    //goes back to 0 after the last player's turn
+    //assigns back to the current player 
+
 });
 
 function createPlayers (count) {
