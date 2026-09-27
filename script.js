@@ -1,6 +1,6 @@
 //DOM
 function generateBoard(totalSquares) {
-    //definer function and takes one input called totalSquares
+    //define function and takes one input called totalSquares
     const board = document.getElementById("board");
     //gets the <div id="board"> element from html and stores it ina variable called board
     const radius = 200;
@@ -51,14 +51,20 @@ function generateBoard(totalSquares) {
         }
     }
 
+//declare
  const boardSizeInput = document.getElementById("boardSize");
  const playersInput = document.getElementById("numOfPlayers");
  const startButton = document.getElementById("startButton");
- 
+ const rollButton = document.getElementById("rollButton");
+ //cannot be named the same as the function
+
  //references to the form elements
  const setupDiv = document.getElementById("setup");
  const boardDiv = document.getElementById("board");
+ const diceDiv = document.getElementById("dice");
 
+ let playerList;
+ 
  //add event listener
  startButton.addEventListener("click", function() {
     //read values then validate
@@ -67,7 +73,6 @@ function generateBoard(totalSquares) {
     const players = Number(playersInput.value);
     //note the values are strings not numbers the .value returns a string
     //so use Number()
-
 
     //validate with an if statement
     if (size < 10 || size> 50) {
@@ -80,11 +85,45 @@ function generateBoard(totalSquares) {
         return;
     }
 
+    // creatPlayers
+    playerList = createPlayers(players);
+    //runs the createPlayers function
+    //players = number the user types in the form
+    //takes array and stores in in new variable playerList
     setupDiv.classList.add("hidden");
     //adds the class hidden from css to the setup div
     boardDiv.classList.remove("hidden");
     //removes the hidden class from board so that it can become visible
+    diceDiv.classList.remove("hidden");
+    //same thing as board all in the setup
+    //same flow as how I want it to be when the user plays
     generateBoard(size);
     //builds the board with the size the user inputs
 
- })
+ });
+
+rollButton.addEventListener("click", function() {
+    const result = rollDice();
+    console.log(result);
+});
+
+function createPlayers (count) {
+    //define function and takes one input called count
+    const players = [];
+
+    for (let i = 0; i < count; i++ ) {
+        const obj = {name: `Player ${i + 1}`, balance: 1000, position: 0};
+        //starting points
+        //when i = 0 string is Player 1
+        //when i = 1 string is Player 2 etc...
+
+        players.push(obj);
+        //adding the elements to the end of the array
+    }
+    return players;
+}
+
+function rollDice () {
+    return Math.floor(Math.random() * 6) + 1;
+    //every roll lands between 1 and 6 with equal chance
+}
