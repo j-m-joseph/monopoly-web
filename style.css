@@ -12,8 +12,8 @@ h1 {
 #board {
     background-color: rgb(178, 221, 178);
     position: relative;
-    /*corners of the board arereference point
-    squares sit relavive to the corners of the board*/
+    /*corners of the board are reference points
+    squares sit relative to the corners of the board*/
     width: 500px;
     /*width*/
     height: 500px;
@@ -32,8 +32,15 @@ h1 {
     font-size: 30px;
     
     position: absolute;
-    /* takes squares out of "flow" so they can be psitioned manually and that happens with transform in JS */
+    /* takes squares out of "flow" so they can be positioned manually and that happens with transform in JS */
     top: 50%;
     left: 50%;
     /* puts the corner of the square in the centre of the board */
 }
+
+.hidden {
+    /* hide the input parts and show and build the board only */
+    display: none;
+    /* any element with class="hidden" disappears */
+}
+

@@ -50,5 +50,41 @@ function generateBoard(totalSquares) {
          //to appear
         }
     }
-generateBoard();
-//calls generateBoard function created earlier to generate the board
+
+ const boardSizeInput = document.getElementById("boardSize");
+ const playersInput = document.getElementById("numOfPlayers");
+ const startButton = document.getElementById("startButton");
+ 
+ //references to the form elements
+ const setupDiv = document.getElementById("setup");
+ const boardDiv = document.getElementById("board");
+
+ //add event listener
+ startButton.addEventListener("click", function() {
+    //read values then validate
+    //read
+    const size = Number(boardSizeInput.value);
+    const players = Number(playersInput.value);
+    //note the values are strings not numbers the .value returns a string
+    //so use Number()
+
+
+    //validate with an if statement
+    if (size < 10 || size> 50) {
+        alert("Board size must be between 10 and 50");
+        return;
+    }
+
+    if (players < 2 || players > 10) {
+        alert("The number of players must be between 2 and 10");
+        return;
+    }
+
+    setupDiv.classList.add("hidden");
+    //adds the class hidden from css to the setup div
+    boardDiv.classList.remove("hidden");
+    //removes the hidden class from board so that it can become visible
+    generateBoard(size);
+    //builds the board with the size the user inputs
+
+ })
