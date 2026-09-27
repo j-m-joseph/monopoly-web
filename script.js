@@ -66,18 +66,19 @@ function generateBoard(totalSquares) {
  let playerList;
  let currentPlayer = 0;
  //start at 0 for player 1
+ let boardSize;
  
  //add event listener
  startButton.addEventListener("click", function() {
     //read values then validate
     //read
-    const size = Number(boardSizeInput.value);
+    boardSize = Number(boardSizeInput.value);
     const players = Number(playersInput.value);
     //note the values are strings not numbers the .value returns a string
     //so use Number()
 
     //validate with an if statement
-    if (size < 10 || size> 50) {
+    if (boardSize < 10 || boardSize> 50) {
         alert("Board size must be between 10 and 50");
         return;
     }
@@ -99,7 +100,7 @@ function generateBoard(totalSquares) {
     diceDiv.classList.remove("hidden");
     //same thing as board all in the setup
     //same flow as how I want it to be when the user plays
-    generateBoard(size);
+    generateBoard(boardSize);
     //builds the board with the size the user inputs
 
  });
@@ -111,6 +112,12 @@ rollButton.addEventListener("click", function() {
     //recording whose turn it is 
     console.log(player.name + "'s turn");
     //log player's name in the console
+
+    //movement
+    player.position = (player.position + result) % boardSize;
+    //moves the player
+    console.log(player.name + " is now on position " + player.position);
+    //prints where the player landed
     currentPlayer = (currentPlayer + 1) % playerList.length;
     //advance to next player
     //next index
