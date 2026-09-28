@@ -44,3 +44,7 @@ h1 {
     /* any element with class="hidden" disappears */
 }
 
+#messages {
+    white-space: pre-line;
+    /*Adding line breaks*/
+}

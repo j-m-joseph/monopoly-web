@@ -62,6 +62,7 @@ function generateBoard(totalSquares) {
  const setupDiv = document.getElementById("setup");
  const boardDiv = document.getElementById("board");
  const diceDiv = document.getElementById("dice");
+ const messageDiv = document.getElementById("messages");
 
  let playerList;
  let currentPlayer = 0;
@@ -100,6 +101,7 @@ function generateBoard(totalSquares) {
     diceDiv.classList.remove("hidden");
     //same thing as board all in the setup
     //same flow as how I want it to be when the user plays
+    messageDiv.classList.remove("hidden");
     generateBoard(boardSize);
     //builds the board with the size the user inputs
 
@@ -107,17 +109,19 @@ function generateBoard(totalSquares) {
 
 rollButton.addEventListener("click", function() {
     const result = rollDice();
-    console.log(result);
+    messageDiv.textContent += "Rolled a " + result + "\n";
+    //add the roll result to the messaes log
+   //changed from console.log() to appear on the actual page
     const player = playerList[currentPlayer];
     //recording whose turn it is 
-    console.log(player.name + "'s turn");
-    //log player's name in the console
+    messageDiv.textContent += player.name + "'s turn\n";
+    //log player's name in the message div
 
     //movement
     player.position = (player.position + result) % boardSize;
     //moves the player
-    console.log(player.name + " is now on position " + player.position);
-    //prints where the player landed
+    messageDiv.textContent += player.name + " is now on position " + player.position + "\n";
+    //writes to message div where the player landed
     currentPlayer = (currentPlayer + 1) % playerList.length;
     //advance to next player
     //next index
