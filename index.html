@@ -22,8 +22,16 @@
 
         <button id="startButton">Start Game</button>
     </div>
+
     <!--Board and Game areas start hidden only setup is seen upon loading-->
     <div id="board" class="hidden"></div>
+    <!--Only appears when player lands on unowned property-->
+    <div id="buy-prompt" class="hidden">
+        <p id="buy-text"></p>
+        <button id="buy-yes">Buy</button>
+        <button id="buy-no">Skip</button>
+    </div>
+
     <div id="player-info" class="hidden"></div>
     <div id="dice" class="hidden">
         <button id="rollButton">Roll Dice</button>

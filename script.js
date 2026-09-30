@@ -69,6 +69,10 @@ const setupDiv = document.getElementById("setup");
 const boardDiv = document.getElementById("board");
 const diceDiv = document.getElementById("dice");
 const messageDiv = document.getElementById("messages");
+const buyPromptDiv = document.getElementById("buy-prompt");
+const buyTextP = document.getElementById("buy-text");
+const buyYesButton = document.getElementById("buy-yes");
+const buyNoButton = document.getElementById("buy-no");
 
 let playerList;
 let currentPlayer = 0;
@@ -76,6 +80,8 @@ let currentPlayer = 0;
 let boardSize;
 let squares = [];
 let squareData;
+let pendingBuyer;
+let pendingProperty;
 
 const PROPERTY_NAMES = [
   //const  do not modify
@@ -173,6 +179,9 @@ function generateSquareData(boardSize) {
         name: name,
         price: purchasePrice,
         rent: rentalPrice,
+        owner: null,
+        //every property starts unowned
+        //when someon buys it the owner is set to player object
       });
       //60% chance property and adds property object to array
     } else {
@@ -234,12 +243,11 @@ startButton.addEventListener("click", function () {
   //same thing as board all in the setup
   //same flow as how I want it to be when the user plays
   messageDiv.classList.remove("hidden");
+
   generateBoard(boardSize);
   //builds the board with the size the user inputs
   squareData = generateSquareData(boardSize);
   //the data array exists in every game that is played
-  console.log(squareData);
-  //temporary
 
   for (const player of playerList) {
     //loop through each players object in the playerList array
@@ -277,12 +285,8 @@ rollButton.addEventListener("click", function () {
   //const because it is set once the old pos does not change
   player.position = (player.position + result) % boardSize;
   //moves the player
-  messageDiv.textContent =
-    messageDiv.textContent +
-    player.name +
-    " is now on position " +
-    player.position +
-    "\n";
+  messageDiv.textContent +=
+    player.name + " is now on position " + player.position + "\n";
   //writes to message div where the player landed
 
   //token movement
@@ -291,11 +295,44 @@ rollButton.addEventListener("click", function () {
   squares[player.position].appendChild(player.token);
   //puts it on the new square depending on what the player rolls
 
+  //Checking what square a player has landed on if unowned property show prompt from html
+  const landedSquare = squareData[player.position];
+  //landedSquare holds the object for what square the player landed on
+
+  if (landedSquare.type === "property" && landedSquare.owner === null) {
+    //if it's a property and unowned
+
+    //who is buying and what are they buying
+    pendingBuyer = player;
+    pendingProperty = landedSquare;
+
+    buyTextP.textContent =
+      "You have landed on " +
+      landedSquare.name +
+      " would you like to buy " +
+      landedSquare.name +
+      " for £" +
+      landedSquare.price +
+      "?";
+    buyPromptDiv.classList.remove("hidden");
+    //this prompt appears every time a player lands on an unowned property
+    //Disappears when the player buys or skips
+
+  } else if  (landedSquare.type === "property" && landedSquare.owner !== player) {
+      //property and the owner is not the current player
+      player.balance = player.balance - landedSquare.rent;
+      //reduce rent from current player
+      landedSquare.owner.balance = landedSquare.owner.balance + landedSquare.rent;
+      //add rent money to the current owner balance
+      messageDiv.textContent += player.name + " paid £" + landedSquare.rent + " rent to " + landedSquare.owner.name + "\n";
+      //message to show exchange
+    }
+
+
   //pass home bonus check
   if (player.position < oldPosition) {
     player.balance = player.balance + 200;
-    messageDiv.textContent =
-      messageDiv.textContent + player.name + " passed Home. + £200\n";
+    messageDiv.textContent += player.name + " passed Home. + £200\n";
     //there is no need for an else if the player didn pass home there is nothing to do
   }
 
@@ -304,6 +341,41 @@ rollButton.addEventListener("click", function () {
   //next index
   //goes back to 0 after the last player's turn
   //assigns back to the current player
+});
+
+buyYesButton.addEventListener("click", function () {
+  if (pendingBuyer.balance >= pendingProperty.price) {
+    //checks if the player can even afford the property
+    //condition for yes they can afford it
+    pendingBuyer.balance = pendingBuyer.balance - pendingProperty.price;
+    //new owner balance after buyiing the property
+    pendingProperty.owner = pendingBuyer;
+    //set the property's owner
+    messageDiv.textContent +=
+      pendingBuyer.name +
+      " bought " +
+      pendingProperty.name +
+      " for £" +
+      pendingProperty.price +
+      "\n";
+    //message to show they have bought the property
+  } else {
+    messageDiv.textContent +=
+      pendingBuyer.name + " cannot afford " + pendingProperty.name + "\n";
+    //can't afford case if they click yes without being able to afford it
+  }
+  buyPromptDiv.classList.add("hidden");
+  //hide the prompt
+
+  console.log("Balances:", playerList.map(p => p.name + ": £" + p.balance).join(", "));
+console.log("Owned:", squareData.filter(s => s.owner).map(s => s.name + " → " + s.owner.name).join(", "));
+  });
+
+buyNoButton.addEventListener("click", function () {
+  messageDiv.textContent +=
+    pendingBuyer.name + " does not want to buy " + pendingProperty.name + "\n";
+  buyPromptDiv.classList.add("hidden");
+  //hide the prompt
 });
 
 function createPlayers(count) {
