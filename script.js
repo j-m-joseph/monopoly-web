@@ -295,6 +295,18 @@ rollButton.addEventListener("click", function () {
   squares[player.position].appendChild(player.token);
   //puts it on the new square depending on what the player rolls
 
+
+  //Pass Home is checked immediately after the move, before landing logic.
+  //This way the roll's wrap is checked separately from the teleport's wrap.
+  //Two independent checks so no double bonus for a single wrap.
+
+  //pass home bonus check
+  if (player.position < oldPosition) {
+    player.balance = player.balance + 200;
+    messageDiv.textContent += player.name + " passed Home. + £200\n";
+    //there is no need for an else if the player didn pass home there is nothing to do
+  }
+
   //Checking what square a player has landed on if unowned property show prompt from html
   const landedSquare = squareData[player.position];
   //landedSquare holds the object for what square the player landed on
@@ -317,23 +329,53 @@ rollButton.addEventListener("click", function () {
     buyPromptDiv.classList.remove("hidden");
     //this prompt appears every time a player lands on an unowned property
     //Disappears when the player buys or skips
-
-  } else if  (landedSquare.type === "property" && landedSquare.owner !== player) {
-      //property and the owner is not the current player
-      player.balance = player.balance - landedSquare.rent;
-      //reduce rent from current player
-      landedSquare.owner.balance = landedSquare.owner.balance + landedSquare.rent;
-      //add rent money to the current owner balance
-      messageDiv.textContent += player.name + " paid £" + landedSquare.rent + " rent to " + landedSquare.owner.name + "\n";
-      //message to show exchange
+  } else if (landedSquare.type === "property" && landedSquare.owner !== player) {
+    //property and the owner is not the current player
+    player.balance = player.balance - landedSquare.rent;
+    //reduce rent from current player
+    landedSquare.owner.balance = landedSquare.owner.balance + landedSquare.rent;
+    //add rent money to the current owner balance
+    messageDiv.textContent +=
+      player.name + " paid £" + landedSquare.rent + " rent to " + landedSquare.owner.name + "\n";
+    //message to show exchange
+  
+  } else if (landedSquare.type === "station") {
+    const stationPositions = [];
+    //const because once placed the station positions don't change on the board
+    //Build station positions array
+    for (let i = 0; i < squareData.length; i++) {
+      //Home square is already protected it is always considered a road so iteration can start at 0
+      if (squareData[i].type === "station") {
+        stationPositions.push(i);
+      }
     }
+    //loop ends
 
+    const otherStations = stationPositions.filter(pos => pos !== player.position);
+    //when the player is standing on a station remove the current station from the array
+    //They should teleport to a different station
+    const randomIndex = Math.floor(Math.random() * otherStations.length);
+    const newStationPos = otherStations[randomIndex];
+    //pick a random station of the remaining 
+    const currentStation = player.position;
+  
+    player.position = newStationPos;
+    //save to compare old and new stations in case of passing home
+    //then move the player
+    
+    player.token.remove();
+    squares[player.position].appendChild(player.token);
+    //same pattern for roll this is to move the token
 
-  //pass home bonus check
-  if (player.position < oldPosition) {
-    player.balance = player.balance + 200;
-    messageDiv.textContent += player.name + " passed Home. + £200\n";
-    //there is no need for an else if the player didn pass home there is nothing to do
+    //IF HOME IS PASSED
+    if (player.position < currentStation) {
+      player.balance += 200;
+      //if they passed Home give the player 200
+      messageDiv.textContent += player.name + " passed Home. + £200\n";
+
+    }
+    messageDiv.textContent += player.name + " teleported to station " + player.position + "\n";
+    //log teleport
   }
 
   currentPlayer = (currentPlayer + 1) % playerList.length;
@@ -366,9 +408,6 @@ buyYesButton.addEventListener("click", function () {
   }
   buyPromptDiv.classList.add("hidden");
   //hide the prompt
-
-  console.log("Balances:", playerList.map(p => p.name + ": £" + p.balance).join(", "));
-console.log("Owned:", squareData.filter(s => s.owner).map(s => s.name + " → " + s.owner.name).join(", "));
   });
 
 buyNoButton.addEventListener("click", function () {
