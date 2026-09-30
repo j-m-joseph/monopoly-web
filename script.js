@@ -75,6 +75,131 @@ let currentPlayer = 0;
 //start at 0 for player 1
 let boardSize;
 let squares = [];
+let squareData;
+
+const PROPERTY_NAMES = [
+  //const  do not modify
+  "Fleet Street",
+  "Bond Street",
+  "Dragon Alley",
+  "Kent Road",
+  "Mayfair",
+  "Park Lane",
+  "Oxford Street",
+  "Regent Street",
+  "Piccadilly",
+  "Strand",
+  "Cambridge Crescent",
+  "Cardiff Road",
+  "Belfast Street",
+  "Edinburgh Drive",
+  "York Way",
+  "Surrey Street",
+  "Bristol Avenue",
+  "Oak Lane",
+  "Maple Avenue",
+  "Willow Road",
+  "River Street",
+  "Meadow Way",
+  "Hilltop Drive",
+  "Sunset Boulevard",
+  "Victory Road",
+  "Fortune Square",
+  "Quantum Street",
+  "Pixel Street",
+  "Code Avenue",
+  "Logic Lane",
+  "Platinum Way",
+  "Sapphire Street",
+  "Emerald Avenue",
+  "Diamond Drive",
+  "Royal Crescent",
+];
+
+function generateSquareData(boardSize) {
+  //takes boardSize and returns an array of square data objects
+  //build the data different from generateBoard which is visual squares
+  const namesPool = PROPERTY_NAMES.slice();
+  //when a name is used remove it from the list of property names to avoid repetition
+  //spread also works but slice looks clearer to me
+
+  const squareData = [];
+  //empty array to collect details
+
+  for (let i = 0; i < boardSize; i++) {
+    if (i === 0) {
+      squareData.push({ type: "road", name: "Home" });
+      continue;
+    }
+    // Protects home square
+
+    let purchasePrice;
+
+    //the condition checks the rules are same ones I wrote for Java
+    if (i < boardSize / 3) {
+      purchasePrice = 10 + Math.floor(Math.random() * 191);
+      //range from 10 to 200 in price and round down if not an int
+    } else if (i < 2 * (boardSize / 3)) {
+      purchasePrice = 200 + Math.floor(Math.random() * 111);
+      //range from 200 to 310
+    } else {
+      purchasePrice = 310 + Math.floor(Math.random() * 191);
+      //last 1/3
+      //range from 310 to 500
+    }
+
+    purchasePrice = Math.floor(purchasePrice / 10) * 10;
+    //rounding the int
+
+    const rentalPrice = purchasePrice / 10;
+    //rent is always the purchasePrice / 10 I have just kept the rule constant for simplicity
+
+    if (Math.random() < 0.1) {
+      //10% chance road
+      squareData.push({ type: "road" });
+      //adds road object to array
+    } else if (Math.random() < 0.6) {
+      //only if cond 1 is false 60% chance of properties
+      const randomIndex = Math.floor(Math.random() * namesPool.length);
+      //picks a random index into the pool
+      //Math.random = 0.37 * 20 is 7.4 then round down to 7
+      //but 35 is what it is multiplied by in the game 20 is an example
+
+      const name = namesPool.splice(randomIndex, 1)[0];
+      //removes and takes name from the pool 2 steps in one line
+      //needs splice to remove it could be picked again without it
+      squareData.push({
+        type: "property",
+        name: name,
+        price: purchasePrice,
+        rent: rentalPrice,
+      });
+      //60% chance property and adds property object to array
+    } else {
+      squareData.push({ type: "road" });
+      //remaining 30% road and adds road object
+    }
+  }
+
+  //stations
+  let numOfStations = Math.floor(boardSize / 6);
+  //divide the board by 6 and round down
+  if (numOfStations < 2) {
+    //if the result of the division is less than 2
+    numOfStations = 2;
+    //there are 2 stations
+  }
+
+  const spacing = Math.floor(boardSize / numOfStations);
+  //distance between station and int division to match my java
+  for (let j = 0; j < numOfStations; j++) {
+    const stationPosition = 1 + j * spacing;
+    //1st station is at 1 to protect Home square next one is spacing itself further
+    squareData[stationPosition] = { type: "station" };
+    //overwrites whatever road/property was there
+  }
+  return squareData;
+}
 
 //add event listener
 startButton.addEventListener("click", function () {
@@ -111,6 +236,10 @@ startButton.addEventListener("click", function () {
   messageDiv.classList.remove("hidden");
   generateBoard(boardSize);
   //builds the board with the size the user inputs
+  squareData = generateSquareData(boardSize);
+  //the data array exists in every game that is played
+  console.log(squareData);
+  //temporary
 
   for (const player of playerList) {
     //loop through each players object in the playerList array
@@ -156,13 +285,12 @@ rollButton.addEventListener("click", function () {
     "\n";
   //writes to message div where the player landed
 
-
   //token movement
   player.token.remove();
   //takes the token off the square that t was on
   squares[player.position].appendChild(player.token);
   //puts it on the new square depending on what the player rolls
-  
+
   //pass home bonus check
   if (player.position < oldPosition) {
     player.balance = player.balance + 200;
