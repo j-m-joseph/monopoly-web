@@ -79,6 +79,10 @@ let currentPlayer = 0;
 //start at 0 for player 1
 let boardSize;
 let squares = [];
+let cycleSquares = [];
+//declares a variable to hold the cycle square data
+//Arrray of booleans
+//cycle is a flag on the position not a type of square
 let squareData;
 let pendingBuyer;
 let pendingProperty;
@@ -249,6 +253,39 @@ startButton.addEventListener("click", function () {
   squareData = generateSquareData(boardSize);
   //the data array exists in every game that is played
 
+  //The cycleData depends on the squareData
+  //nothing earlier can know whichsquares are built
+  cycleSquares = new Array(boardSize).fill(false);
+  //every square on the board will have a default array of false
+  const roadPositions = [];
+  //the index of every road square will be held in this array
+
+  //3 random psitions might land on properties or stations
+  //cycle square must be a road so collect and store all the road squares
+  //excluding home first
+  for (let i = 1; i < squareData.length; i++) {
+    //start at 1 because the Home square is protected
+    //the and is to pick 3 but fewer than 3 stops just to prevent a crash
+    if (squareData[i].type === "road") {
+      roadPositions.push(i);
+    }
+  }
+
+  //collecting all the road positions
+  for (let k = 0; k < 3 && roadPositions.length > 0; k++) {
+    //pick 3 random roads from the list of available roads and stop early if there are less than 3
+    //this is extremely unlikely but is there just in case
+    const Ivar = Math.floor(Math.random() * roadPositions.length);
+    //Ivar is just index but index cannot be used to name the var
+    //a ramdon number between 0 and excluding 6 is muliplied by the number of roads in the array
+    //the answer is rounded down and that becomes the index
+    cycleSquares[roadPositions[Ivar]] = true;
+    //the position(index) is marked as a cycle square
+    roadPositions.splice(Ivar, 1);
+    //remove selection to stop it being picked twice
+    //same thing as the namesPool
+  }
+
   for (const player of playerList) {
     //loop through each players object in the playerList array
     //the dots will all eb on top of eachother they are there but only one is visible before the players move
@@ -270,14 +307,29 @@ startButton.addEventListener("click", function () {
 });
 
 rollButton.addEventListener("click", function () {
-  const result = rollDice();
-  messageDiv.textContent += "Rolled a " + result + "\n";
-  //add the roll result to the messages log
-  //changed from console.log() to appear on the actual page
+  //it was roll, log then get player but for the cyce square to work it has to be
+  //get player, roll,check cycle restriction then log details
   const player = playerList[currentPlayer];
-  //recording whose turn it is
+  //get the current player first because the cycle check needs the player
+  let result = rollDice();
+  const originalResult = result;
+  //save the actual roll to be logged
+
+  if (player.cycleRestriction) {
+    //if the player is restriced by their diece roll
+    if (result >= 4) {
+      result = 0;
+      //rolling a 4+ means thay don't move for CURRENT TURN
+    }
+
+    player.cycleRestriction = false;
+    //clear the flag back to false because the restriction only lasts one turn
+  }
+
+  messageDiv.textContent += "Rolled a " + originalResult + "\n";
+  //log the number the player rolled not the overrirden one
   messageDiv.textContent += player.name + "'s turn\n";
-  //log player's name in the message div
+  //log wose turn it is
 
   //movement
   const oldPosition = player.position;
@@ -294,7 +346,6 @@ rollButton.addEventListener("click", function () {
   //takes the token off the square that t was on
   squares[player.position].appendChild(player.token);
   //puts it on the new square depending on what the player rolls
-
 
   //Pass Home is checked immediately after the move, before landing logic.
   //This way the roll's wrap is checked separately from the teleport's wrap.
@@ -329,16 +380,23 @@ rollButton.addEventListener("click", function () {
     buyPromptDiv.classList.remove("hidden");
     //this prompt appears every time a player lands on an unowned property
     //Disappears when the player buys or skips
-  } else if (landedSquare.type === "property" && landedSquare.owner !== player) {
+  } else if (
+    landedSquare.type === "property" &&
+    landedSquare.owner !== player
+  ) {
     //property and the owner is not the current player
     player.balance = player.balance - landedSquare.rent;
     //reduce rent from current player
     landedSquare.owner.balance = landedSquare.owner.balance + landedSquare.rent;
     //add rent money to the current owner balance
     messageDiv.textContent +=
-      player.name + " paid £" + landedSquare.rent + " rent to " + landedSquare.owner.name + "\n";
+      player.name +
+      " paid £" +
+      landedSquare.rent +
+      " rent to " +
+      landedSquare.owner.name +
+      "\n";
     //message to show exchange
-  
   } else if (landedSquare.type === "station") {
     const stationPositions = [];
     //const because once placed the station positions don't change on the board
@@ -351,18 +409,20 @@ rollButton.addEventListener("click", function () {
     }
     //loop ends
 
-    const otherStations = stationPositions.filter(pos => pos !== player.position);
+    const otherStations = stationPositions.filter(
+      (pos) => pos !== player.position,
+    );
     //when the player is standing on a station remove the current station from the array
     //They should teleport to a different station
     const randomIndex = Math.floor(Math.random() * otherStations.length);
     const newStationPos = otherStations[randomIndex];
-    //pick a random station of the remaining 
+    //pick a random station of the remaining
     const currentStation = player.position;
-  
+
     player.position = newStationPos;
     //save to compare old and new stations in case of passing home
     //then move the player
-    
+
     player.token.remove();
     squares[player.position].appendChild(player.token);
     //same pattern for roll this is to move the token
@@ -372,10 +432,19 @@ rollButton.addEventListener("click", function () {
       player.balance += 200;
       //if they passed Home give the player 200
       messageDiv.textContent += player.name + " passed Home. + £200\n";
-
     }
-    messageDiv.textContent += player.name + " teleported to station " + player.position + "\n";
+    messageDiv.textContent +=
+      player.name + " teleported to station " + player.position + "\n";
     //log teleport
+
+    //After the property checks and a cycle can never be a station so there are no collisions
+  } else if (cycleSquares[player.position]) {
+    //if the player lands on a cycle square
+    player.cycleRestriction = true;
+    //flag the player their next roll will be restricted
+    messageDiv.textContent +=
+      player.name + " landed on a cycle square. Next roll restricted.\n";
+    //log the future restriction
   }
 
   currentPlayer = (currentPlayer + 1) % playerList.length;
@@ -408,7 +477,7 @@ buyYesButton.addEventListener("click", function () {
   }
   buyPromptDiv.classList.add("hidden");
   //hide the prompt
-  });
+});
 
 buyNoButton.addEventListener("click", function () {
   messageDiv.textContent +=
@@ -442,6 +511,11 @@ function createPlayers(count) {
       balance: 1000,
       position: 0,
       color: colors[i],
+      cycleRestriction: false,
+      //every player starts false
+      //when players land becomes true
+      //next turn the roll checks and applies the rule
+      //then after that turn goes back to false (default)
     };
     //starting points
     //when i = 0 string is Player 1
