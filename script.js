@@ -74,11 +74,16 @@ const buyTextP = document.getElementById("buy-text");
 const buyYesButton = document.getElementById("buy-yes");
 const buyNoButton = document.getElementById("buy-no");
 const winnerDiv = document.getElementById("winner");
+//outer
+const winnerTextP = document.getElementById("winner-text");
+//inner
 //getting winner div
 const playerInfoDiv = document.getElementById("player-info");
 //grab player info div
 const actionsDiv = document.getElementById("actions");
 const endGameButton = document.getElementById("endGameButton");
+const restartButton = document.getElementById("restartButton");
+//Grab restart button
 
 let playerList;
 let currentPlayer = 0;
@@ -329,6 +334,8 @@ rollButton.addEventListener("click", function () {
     if (result >= 4) {
       result = 0;
       //rolling a 4+ means they don't move for CURRENT TURN
+      messageDiv.textContent +=
+        player.name + "'s cycle restriction blocked the move.\n";
     }
 
     player.cycleRestriction = false;
@@ -464,11 +471,14 @@ rollButton.addEventListener("click", function () {
     //log the future restriction
   }
 
-  currentPlayer = (currentPlayer + 1) % playerList.length;
-  //advance to the next player
-  //next index
-  //goes back to 0 after the last player's turn
-  //assigns back to the current player
+  if (playerList.includes(player)) {
+    currentPlayer = (currentPlayer + 1) % playerList.length;
+  } else {
+    //current player went bankrupt now they are gone from the playerList
+    if (currentPlayer >= playerList.length) {
+      currentPlayer = 0;
+    }
+  }
 
   //After turn check if there is anyone left on the list
   //if there is only 1, game over
@@ -480,8 +490,16 @@ rollButton.addEventListener("click", function () {
 
   //refresh player info display
   playerInfoDiv.textContent = playerList
-  .map((p) => p.name + ": £" + Math.floor(p.balance) + " cash | £" + Math.floor(calculateAssets(p)) + " total")
-  .join("\n");
+    .map(
+      (p) =>
+        p.name +
+        ": £" +
+        Math.floor(p.balance) +
+        " cash | £" +
+        Math.floor(calculateAssets(p)) +
+        " total",
+    )
+    .join("\n");
   //tuurns array of player objects into an array of strings
   //joins them with a newline
   //asigns the result to playerInfoDiv.textContent
@@ -517,11 +535,19 @@ buyYesButton.addEventListener("click", function () {
   buyPromptDiv.classList.add("hidden");
   //hide the prompt
   rollButton.disabled = false;
-  //game resumes — next player can roll
+  //game resumes so next player can roll
 
   playerInfoDiv.textContent = playerList
-  .map((p) => p.name + ": £" + Math.floor(p.balance) + " cash | £" + Math.floor(calculateAssets(p)) + " total")
-  .join("\n");
+    .map(
+      (p) =>
+        p.name +
+        ": £" +
+        Math.floor(p.balance) +
+        " cash | £" +
+        Math.floor(calculateAssets(p)) +
+        " total",
+    )
+    .join("\n");
 });
 
 buyNoButton.addEventListener("click", function () {
@@ -532,15 +558,27 @@ buyNoButton.addEventListener("click", function () {
   rollButton.disabled = false;
   //game resumes so the next player can roll
 
-playerInfoDiv.textContent = playerList
-  .map((p) => p.name + ": £" + Math.floor(p.balance) + " cash | £" + Math.floor(calculateAssets(p)) + " total")
-  .join("\n");
+  playerInfoDiv.textContent = playerList
+    .map(
+      (p) =>
+        p.name +
+        ": £" +
+        Math.floor(p.balance) +
+        " cash | £" +
+        Math.floor(calculateAssets(p)) +
+        " total",
+    )
+    .join("\n");
 });
 
 //Event listener for endGameButton
 endGameButton.addEventListener("click", function () {
   //end game button
   declareWinner();
+});
+//Event Listener for restart game
+restartButton.addEventListener("click", function () {
+  restartGame();
 });
 
 //handle Bankruptcy function
@@ -594,10 +632,8 @@ function handleBankruptcy(player) {
     playerList.splice(index, 1);
     //remove bankrupt player from array
 
-    if (currentPlayer >= playerList.length) {
-      currentPlayer = 0;
-    }
-    //reset turn pointer if it now points past the end of the array
+    player.token.remove();
+    //takes the bankrupt player's token off the board
 
     messageDiv.textContent +=
       player.name + " is bankrupt and out of the game.\n";
@@ -634,7 +670,7 @@ function declareWinner() {
       winner = playerList[i];
     }
   }
-  
+
   //check for a tie
   //collect every player whose assets equal the highest
   const topPlayers = [];
@@ -647,19 +683,33 @@ function declareWinner() {
 
   if (topPlayers.length > 1) {
     //check array length
-    const names = topPlayers.map((p) => p.name).join(", ");
+
+    const playerNames = topPlayers.map((p) => p.name);
+    const names =
+      playerNames.length === 2
+        ? playerNames[0] + " and " + playerNames[1]
+        : playerNames.slice(0, -1).join(", ") +
+          " and " +
+          playerNames[playerNames.length - 1];
     //use names
+    //this is to fix the odd phrasing when there are 2 players
+
     messageDiv.textContent += "Game over. It's a tie between " + names + "!\n";
-    winnerDiv.textContent = "It's a tie! " + names + " all finished with £" + Math.floor(highestAssets) + " total assets.\n";
+    winnerTextP.textContent =
+      "It's a tie! " +
+      names +
+      " finished with £" +
+      Math.floor(highestAssets) +
+      " each.\n";
   } else {
-  messageDiv.textContent += "Game over, " + winner.name + " wins. !\n";
-  //log to record the winner with their balance
-  winnerDiv.textContent =
-    "Congratulations " +
-    winner.name +
-    " you have won the game with £" +
-    Math.floor(highestAssets) +
-    " total assets!\n";
+    messageDiv.textContent += "Game over, " + winner.name + " wins. !\n";
+    //log to record the winner with their balance
+    winnerTextP.textContent =
+      "Congratulations " +
+      winner.name +
+      " you have won the game with £" +
+      Math.floor(highestAssets) +
+      " total assets!\n";
   }
   //The win message in the panner both message and winner divs are needed
   winnerDiv.classList.remove("hidden");
@@ -676,6 +726,50 @@ function declareWinner() {
   //skip button disabled
   buyPromptDiv.classList.add("hidden");
   //prompt is gone
+}
+
+function restartGame() {
+  boardDiv.classList.add("hidden");
+  diceDiv.classList.add("hidden");
+  messageDiv.classList.add("hidden");
+  playerInfoDiv.classList.add("hidden");
+  actionsDiv.classList.add("hidden");
+  winnerDiv.classList.add("hidden");
+  //game screen disappears
+  setupDiv.classList.remove("hidden");
+  //setup becomes visible again
+  messageDiv.textContent = "";
+  playerInfoDiv.textContent = "";
+  winnerTextP.textContent = "";
+  //leaves the button
+  boardDiv.innerHTML = "";
+  //the innerHTML clears all child elements
+  playerList = [];
+  //fresh player list
+  squareData = [];
+  //fresh square data
+  cycleSquares = [];
+  //new cycle squares
+  squares = [];
+  //new DOM square elements
+  currentPlayer = 0;
+  //resets pointer back to 1st player
+  pendingBuyer = null;
+  //clears buyer
+  pendingProperty = null;
+  //clears choice of property
+
+  //re enable all buttons for fresh game
+  rollButton.disabled = false;
+  endGameButton.disabled = false;
+  buyYesButton.disabled = false;
+  buyNoButton.disabled = false;
+  //un freys the buttons for the new game
+
+  boardSizeInput.value = "";
+  //empties user input of boardSize
+  playersInput.value = "";
+  //empties user input of players
 }
 
 function createPlayers(count) {
