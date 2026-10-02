@@ -49,6 +49,11 @@ h1 {
     /*Adding line breaks*/
 }
 
+#player-info {
+    white-space: pre-line;
+}
+/*to make sure player lines don't run together in one line*/
+
 .token {
     position: absolute;
     width: 12px;

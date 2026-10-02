@@ -73,6 +73,11 @@ const buyPromptDiv = document.getElementById("buy-prompt");
 const buyTextP = document.getElementById("buy-text");
 const buyYesButton = document.getElementById("buy-yes");
 const buyNoButton = document.getElementById("buy-no");
+const winnerDiv = document.getElementById("winner");
+//getting winner div
+const playerInfoDiv = document.getElementById("player-info");
+//grab player info div
+
 
 let playerList;
 let currentPlayer = 0;
@@ -161,9 +166,10 @@ function generateSquareData(boardSize) {
     purchasePrice = Math.floor(purchasePrice / 10) * 10;
     //rounding the int
 
-    const rentalPrice = purchasePrice / 10;
-    //rent is always the purchasePrice / 10 I have just kept the rule constant for simplicity
-
+    const rentalPrice = Math.floor(purchasePrice / 3);
+    //rent is always the purchasePrice / 3 I have just kept the rule constant for simplicity
+    // / 10 made the game go forever so this will tripple the rent prices
+    //rounded because decimals does not make it look nice
     if (Math.random() < 0.1) {
       //10% chance road
       squareData.push({ type: "road" });
@@ -185,7 +191,7 @@ function generateSquareData(boardSize) {
         rent: rentalPrice,
         owner: null,
         //every property starts unowned
-        //when someon buys it the owner is set to player object
+        //when someone buys it the owner is set to player object
       });
       //60% chance property and adds property object to array
     } else {
@@ -247,6 +253,8 @@ startButton.addEventListener("click", function () {
   //same thing as board all in the setup
   //same flow as how I want it to be when the user plays
   messageDiv.classList.remove("hidden");
+  playerInfoDiv.classList.remove("hidden");
+  //unhide start handler
 
   generateBoard(boardSize);
   //builds the board with the size the user inputs
@@ -260,7 +268,7 @@ startButton.addEventListener("click", function () {
   const roadPositions = [];
   //the index of every road square will be held in this array
 
-  //3 random psitions might land on properties or stations
+  //3 random positions might land on properties or stations
   //cycle square must be a road so collect and store all the road squares
   //excluding home first
   for (let i = 1; i < squareData.length; i++) {
@@ -277,7 +285,7 @@ startButton.addEventListener("click", function () {
     //this is extremely unlikely but is there just in case
     const Ivar = Math.floor(Math.random() * roadPositions.length);
     //Ivar is just index but index cannot be used to name the var
-    //a ramdon number between 0 and excluding 6 is muliplied by the number of roads in the array
+    //a randon number between 0 and excluding 6 is muliplied by the number of roads in the array
     //the answer is rounded down and that becomes the index
     cycleSquares[roadPositions[Ivar]] = true;
     //the position(index) is marked as a cycle square
@@ -316,10 +324,10 @@ rollButton.addEventListener("click", function () {
   //save the actual roll to be logged
 
   if (player.cycleRestriction) {
-    //if the player is restriced by their diece roll
+    //if the player is restriced by their dice roll
     if (result >= 4) {
       result = 0;
-      //rolling a 4+ means thay don't move for CURRENT TURN
+      //rolling a 4+ means they don't move for CURRENT TURN
     }
 
     player.cycleRestriction = false;
@@ -329,7 +337,7 @@ rollButton.addEventListener("click", function () {
   messageDiv.textContent += "Rolled a " + originalResult + "\n";
   //log the number the player rolled not the overrirden one
   messageDiv.textContent += player.name + "'s turn\n";
-  //log wose turn it is
+  //log whose turn it is
 
   //movement
   const oldPosition = player.position;
@@ -396,7 +404,13 @@ rollButton.addEventListener("click", function () {
       " rent to " +
       landedSquare.owner.name +
       "\n";
-    //message to show exchange
+    //message to show
+
+    //call method
+    handleBankruptcy(player);
+    //check if rent payment left the player in debt
+    //the buy section doesnt need a bankruptcy check
+    //the player pays rent without their balance being checked here
   } else if (landedSquare.type === "station") {
     const stationPositions = [];
     //const because once placed the station positions don't change on the board
@@ -452,6 +466,21 @@ rollButton.addEventListener("click", function () {
   //next index
   //goes back to 0 after the last player's turn
   //assigns back to the current player
+
+  //After turn check if there is anyone left on the list
+  //if there is only 1, game over
+  if (playerList.length === 1) {
+    //if only one player remains
+    declareWinner();
+    //call function declareWinner()
+  }
+
+  //refresh player info display
+  playerInfoDiv.textContent = playerList.map(p => p.name + ": £" + Math.floor(p.balance)).join("\n");
+  //tuurns array of player objects into an array of strings
+  //joins them with a newline
+  //asigns the result to playerInfoDiv.textContent
+  //after every roll the player-info panal shows all the balances for each player
 });
 
 buyYesButton.addEventListener("click", function () {
@@ -477,6 +506,8 @@ buyYesButton.addEventListener("click", function () {
   }
   buyPromptDiv.classList.add("hidden");
   //hide the prompt
+
+  playerInfoDiv.textContent = playerList.map(p => p.name + ": £" + Math.floor(p.balance)).join("\n");  
 });
 
 buyNoButton.addEventListener("click", function () {
@@ -484,8 +515,87 @@ buyNoButton.addEventListener("click", function () {
     pendingBuyer.name + " does not want to buy " + pendingProperty.name + "\n";
   buyPromptDiv.classList.add("hidden");
   //hide the prompt
+  
+  playerInfoDiv.textContent = playerList.map(p => p.name + ": £" + Math.floor(p.balance)).join("\n");  
 });
 
+//handle Bankruptcy function
+function handleBankruptcy(player) {
+  while (player.balance < 0) {
+    //while loop because the player might need to keep selling until balance is 0 or above
+    let cheapest = null;
+    //reset at the start of each iteration
+
+    for (let i = 0; i < squareData.length; i++) {
+      //loop through every square on the board
+      if (squareData[i].type === "property" && squareData[i].owner === player) {
+        //the square is a property and owned by the bankrupt player both conditions must be valid
+        if (cheapest === null || squareData[i].price < cheapest.price) {
+          //second nested if statement
+          //there is no owned property for the bankrupt player or the found new property is cheaper than the current cheapest property
+          cheapest = squareData[i];
+          //store new cheapest if there is a new cheapest
+        }
+      }
+    }
+
+    if (cheapest === null) {
+      //if cheapest is still null the bankrupt player owns nothing
+      break;
+      //exit loop
+    }
+
+    player.balance = player.balance + cheapest.price / 2;
+    //sell property at 1/2 price and add the amount to the bankrupt player's balance
+    //There is no auctioning the property is returned to the "bank"
+    cheapest.owner = null;
+    //property goes back to being unowned
+
+    messageDiv.textContent +=
+      player.name +
+      " sold " +
+      cheapest.name +
+      " for £" +
+      cheapest.price / 2 +
+      "\n";
+    //log the sale
+  }
+
+  if (player.balance < 0) {
+    //after selling everything possible check balance again
+
+    const index = playerList.indexOf(player);
+    //find the player's index in the playerList
+
+    playerList.splice(index, 1);
+    //remove bankrupt player from array
+
+    if (currentPlayer >= playerList.length) {
+      currentPlayer = 0;
+    }
+    //reset turn pointer if it now points past the end of the array
+
+    messageDiv.textContent +=
+      player.name + " is bankrupt and out of the game.\n";
+    //log the removal of the bankrupt player
+  }
+}
+
+function declareWinner() {
+  const winner = playerList[0];
+  //the winner is the only remaining player in the playerList
+  messageDiv.textContent += "Game over, " + winner.name + " wins. !\n";
+  //log to record the winner with their balance
+  winnerDiv.textContent = "Congratulations " + winner.name + " you have won the game with £" + Math.floor(winner.balance) + " remaining" + "!\n";
+  //The win message in the panner both message and winner divs are needed
+  winnerDiv.classList.remove("hidden");
+  //makes the panel visible
+  //the whole game starts hidden
+  //once there is a winner it is visible
+  rollButton.disabled = true;
+  //the players can no longer click on the roll button because the game is over
+
+}
 function createPlayers(count) {
   //define function and takes one input called count
   const players = [];
