@@ -37,7 +37,7 @@ function generateBoard(totalSquares) {
     //same thing because squares must be equal width and height
     square.style.margin = `${-squareSize / 2}px 0px 0px ${-(squareSize / 2)}px`;
     //value then literal text then second value and literal text
-    //template literal
+    //teme literal
 
     //TRANSFORM CODE
     //RoTATE BEFORE TRANSLATE
@@ -77,7 +77,8 @@ const winnerDiv = document.getElementById("winner");
 //getting winner div
 const playerInfoDiv = document.getElementById("player-info");
 //grab player info div
-
+const actionsDiv = document.getElementById("actions");
+const endGameButton = document.getElementById("endGameButton");
 
 let playerList;
 let currentPlayer = 0;
@@ -388,6 +389,8 @@ rollButton.addEventListener("click", function () {
     buyPromptDiv.classList.remove("hidden");
     //this prompt appears every time a player lands on an unowned property
     //Disappears when the player buys or skips
+    rollButton.disabled = true;
+    //pause the game so the user must decide before continuing
   } else if (
     landedSquare.type === "property" &&
     landedSquare.owner !== player
@@ -476,11 +479,18 @@ rollButton.addEventListener("click", function () {
   }
 
   //refresh player info display
-  playerInfoDiv.textContent = playerList.map(p => p.name + ": £" + Math.floor(p.balance)).join("\n");
+  playerInfoDiv.textContent = playerList
+  .map((p) => p.name + ": £" + Math.floor(p.balance) + " cash | £" + Math.floor(calculateAssets(p)) + " total")
+  .join("\n");
   //tuurns array of player objects into an array of strings
   //joins them with a newline
   //asigns the result to playerInfoDiv.textContent
   //after every roll the player-info panal shows all the balances for each player
+
+  //reveal End Game button after the first roll
+  if (actionsDiv.classList.contains("hidden")) {
+    actionsDiv.classList.remove("hidden");
+  }
 });
 
 buyYesButton.addEventListener("click", function () {
@@ -506,8 +516,12 @@ buyYesButton.addEventListener("click", function () {
   }
   buyPromptDiv.classList.add("hidden");
   //hide the prompt
+  rollButton.disabled = false;
+  //game resumes — next player can roll
 
-  playerInfoDiv.textContent = playerList.map(p => p.name + ": £" + Math.floor(p.balance)).join("\n");  
+  playerInfoDiv.textContent = playerList
+  .map((p) => p.name + ": £" + Math.floor(p.balance) + " cash | £" + Math.floor(calculateAssets(p)) + " total")
+  .join("\n");
 });
 
 buyNoButton.addEventListener("click", function () {
@@ -515,8 +529,18 @@ buyNoButton.addEventListener("click", function () {
     pendingBuyer.name + " does not want to buy " + pendingProperty.name + "\n";
   buyPromptDiv.classList.add("hidden");
   //hide the prompt
-  
-  playerInfoDiv.textContent = playerList.map(p => p.name + ": £" + Math.floor(p.balance)).join("\n");  
+  rollButton.disabled = false;
+  //game resumes so the next player can roll
+
+playerInfoDiv.textContent = playerList
+  .map((p) => p.name + ": £" + Math.floor(p.balance) + " cash | £" + Math.floor(calculateAssets(p)) + " total")
+  .join("\n");
+});
+
+//Event listener for endGameButton
+endGameButton.addEventListener("click", function () {
+  //end game button
+  declareWinner();
 });
 
 //handle Bankruptcy function
@@ -581,12 +605,62 @@ function handleBankruptcy(player) {
   }
 }
 
+//A helper for declareWinner function
+function calculateAssets(player) {
+  //defines function and takes player input
+
+  let total = player.balance;
+  //total starts at player'scash balance
+  for (let i = 0; i < squareData.length; i++) {
+    //loop through every square on board
+    if (squareData[i].type === "property" && squareData[i].owner === player) {
+      //two conditions must be true
+      total = total + squareData[i].price;
+      //add property's price to total
+    }
+  }
+  return total;
+  //returns final number
+}
+
 function declareWinner() {
-  const winner = playerList[0];
-  //the winner is the only remaining player in the playerList
+  let winner = playerList[0];
+  let highestAssets = calculateAssets(winner);
+
+  for (let i = 1; i < playerList.length; i++) {
+    const assets = calculateAssets(playerList[i]);
+    if (assets > highestAssets) {
+      highestAssets = assets;
+      winner = playerList[i];
+    }
+  }
+  
+  //check for a tie
+  //collect every player whose assets equal the highest
+  const topPlayers = [];
+  for (const player of playerList) {
+    if (calculateAssets(player) === highestAssets) {
+      topPlayers.push(player);
+      //every player tied for first
+    }
+  }
+
+  if (topPlayers.length > 1) {
+    //check array length
+    const names = topPlayers.map((p) => p.name).join(", ");
+    //use names
+    messageDiv.textContent += "Game over. It's a tie between " + names + "!\n";
+    winnerDiv.textContent = "It's a tie! " + names + " all finished with £" + Math.floor(highestAssets) + " total assets.\n";
+  } else {
   messageDiv.textContent += "Game over, " + winner.name + " wins. !\n";
   //log to record the winner with their balance
-  winnerDiv.textContent = "Congratulations " + winner.name + " you have won the game with £" + Math.floor(winner.balance) + " remaining" + "!\n";
+  winnerDiv.textContent =
+    "Congratulations " +
+    winner.name +
+    " you have won the game with £" +
+    Math.floor(highestAssets) +
+    " total assets!\n";
+  }
   //The win message in the panner both message and winner divs are needed
   winnerDiv.classList.remove("hidden");
   //makes the panel visible
@@ -594,8 +668,16 @@ function declareWinner() {
   //once there is a winner it is visible
   rollButton.disabled = true;
   //the players can no longer click on the roll button because the game is over
-
+  endGameButton.disabled = true;
+  //can;tcloickon End Game twice
+  buyYesButton.disabled = true;
+  //Buy button disabled
+  buyNoButton.disabled = true;
+  //skip button disabled
+  buyPromptDiv.classList.add("hidden");
+  //prompt is gone
 }
+
 function createPlayers(count) {
   //define function and takes one input called count
   const players = [];
