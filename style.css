@@ -1,16 +1,20 @@
 body {
-    background-color: rgb(5, 69, 5);
+    background-color:#f5ede1;
     font-family: Arial;
     /*whole page uses this font*/
+     color: #2a2a30;
+     /*every element inherits this color unless overriden*/
+
 }
 
 h1 {
-    color: white;
-    /*spelling change*/
+    color: rgb(119, 40, 40);
+    text-align: center;
+    margin-top: 30px;
 }
 
 #board {
-    background-color: rgb(178, 221, 178);
+    background-color:#f8a562;
     position: relative;
     /*corners of the board are reference points
     squares sit relative to the corners of the board*/
@@ -24,10 +28,21 @@ h1 {
     the 900px is split evenly amongst the left and right margins so 450px on either side */
 }
 
+#dice {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    /*pulls it back by half its own size so the button's center sits in the centre of the board*/
+    z-index: 10;
+    /* sits on top of anything else there isn;t anything there bur a safety net
+    same thing as tokens positioning on the smaller squares */
+}
+
 #board > .square {
     /* other things will be in the board that are not square.
     This will make sure only square things are altered */
-    background-color: rgb(79, 188, 79);
+    background-color:#fdfbf7;
     text-align: center;
     font-size: 30px;
     
@@ -36,6 +51,42 @@ h1 {
     top: 50%;
     left: 50%;
     /* puts the corner of the square in the centre of the board */
+    box-sizing: border-box;
+    border: 2px solid #8a7a5c;
+    /*adds baorder to make pastels look better*/
+}
+
+#board >.square.home {
+    background-color:#f0d888;
+    /* burgandy color on home square*/
+}
+
+#board > .square.property {
+  background-color:#c8dcc8 ;
+}
+
+#board >.square.station {
+    background-color: #e8b8a0;
+}
+/*the stations colour*/
+
+button {
+background-color: #8a5a6a;
+    color: #ffffff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;    
+}
+
+button:hover {
+    background-color: #6e4654;
+}
+
+button:disabled {
+    background-color: #b0a0a8;
+    cursor: not-allowed;
 }
 
 .hidden {
@@ -45,8 +96,39 @@ h1 {
 }
 
 #messages {
-    white-space: pre-line;
-    /*Adding line breaks*/
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    left: auto;
+    transform: none;
+    background-color: #f5ede1;
+    color: #2a2a30;
+    padding: 12px 20px;
+    border-radius: 8px;
+    border: 2px solid #8a5a6a;
+    font-size: 16px;
+    font-weight: bold;
+    max-width: 300px;
+    z-index: 50;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    /*Toast above other elements*/
+    /* Juat under the Monopoly title */
+    /*floating look*/
+    /* Can't find a place where nothing is covered so settled for the least covering place as it disapeard anyway */
+}
+
+#turn-indicator {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #8a5a6a;
+    color: #ffffff;
+    padding: 10px 24px;
+    border-radius: 6px;
+    font-size: 18px;
+    font-weight: bold;
+    z-index: 100;  
 }
 
 #player-info {

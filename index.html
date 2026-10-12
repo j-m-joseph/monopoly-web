@@ -7,6 +7,8 @@
     <!--Translates to look correct on other devices-->
     <title>Monopoly</title>
     <!--Browser tab-->
+    <meta name="description" content="Browser-based Monopoly game built with JavaScript.">
+    <!--Shows in search results and link previews-->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -24,7 +26,12 @@
     </div>
 
     <!--Board and Game areas start hidden only setup is seen upon loading-->
-    <div id="board" class="hidden"></div>
+    <div id="board" class="hidden">
+        <div id="dice" class="hidden">
+            <button id="rollButton">Roll Dice</button>
+        <!--Adding a button to roll the dice--> 
+    </div>
+</div>
     <!--Only appears when player lands on unowned property-->
     <div id="buy-prompt" class="hidden">
         <p id="buy-text"></p>
@@ -33,10 +40,6 @@
     </div>
 
     <div id="player-info" class="hidden"></div>
-    <div id="dice" class="hidden">
-        <button id="rollButton">Roll Dice</button>
-        <!--Adding a button to roll the dice--> 
-    </div>
     <div id="messages" class="hidden"></div>
     <div id="actions" class="hidden">
         <button id="endGameButton">End Game</button>
@@ -46,6 +49,7 @@
         <!--needed to keep restart button on page--> 
         <button id="restartButton">New Game</button>
     </div>
+    <div id="turn-indicator" class="hidden"></div>
     <script src="script.js"></script>
 </body>
 </html>

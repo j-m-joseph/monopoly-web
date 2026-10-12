@@ -25,6 +25,13 @@ function generateBoard(totalSquares) {
     //brand new empty div element creation and stores in a variable called square
     square.className = "square";
     //new div gets the class square so the css #board rules apply
+
+    if (i === 0) {
+      square.classList.add("home");
+    }
+    //Home is always index 0 so it is tagged with an extra class
+    //no tag on other squares so they stay white
+
     const angle = (360 / totalSquares) * i;
     //angle around the circle where square should sit
     //360 / 16 = 22.5. So each square gets 22.5° of the circle
@@ -84,6 +91,7 @@ const actionsDiv = document.getElementById("actions");
 const endGameButton = document.getElementById("endGameButton");
 const restartButton = document.getElementById("restartButton");
 //Grab restart button
+const turnIndicatorDiv = document.getElementById("turn-indicator");
 
 let playerList;
 let currentPlayer = 0;
@@ -97,6 +105,37 @@ let cycleSquares = [];
 let squareData;
 let pendingBuyer;
 let pendingProperty;
+
+//TOAST
+//toast is the name for a  temporary notification that appears ona  screen
+//I am using it here so there is not a long list of text
+let messageTimeout = null;
+//a var that will hold a reference to a times
+//starts at null because there is no timer runnning yet
+
+function hideMessage() {
+  messageDiv.textContent = "";
+  messageDiv.classList.add("hidden");
+  //clears text and hides the box
+}
+
+function showMessage(text) {
+  //main function
+  //one argument called text and returns nothing
+  messageDiv.textContent = text;
+  //replaces the message in the box with a new message
+  messageDiv.classList.remove("hidden");
+  //makes the box visible
+  if (messageTimeout) {
+    clearTimeout(messageTimeout);
+  }
+  //if a timer is running froma previous message this cancels it
+  messageTimeout = setTimeout(hideMessage, 3000);
+}
+//3000 miliseconds is 3 secs so a schedule to run every 3 secs
+//when run it clears the text and hides the box
+//the returned timerID is stored in messageTimeout o the next call can cancel it
+//setTimeout expects miliseconds so an unavoidable language conversion
 
 const PROPERTY_NAMES = [
   //const  do not modify
@@ -261,11 +300,22 @@ startButton.addEventListener("click", function () {
   messageDiv.classList.remove("hidden");
   playerInfoDiv.classList.remove("hidden");
   //unhide start handler
+  turnIndicatorDiv.classList.remove("hidden");
+  turnIndicatorDiv.textContent = playerList[0].name + "'s turn";
 
   generateBoard(boardSize);
   //builds the board with the size the user inputs
   squareData = generateSquareData(boardSize);
   //the data array exists in every game that is played
+
+  for (let i = 0; i < squareData.length; i++) {
+    if (squareData[i].type === "station") {
+      squares[i].classList.add("station");
+    } else if (squareData[i].type === "property") {
+      squares[i].classList.add("property");
+    }
+  }
+  //The squares are generated and the data is also present
 
   //The cycleData depends on the squareData
   //nothing earlier can know whichsquares are built
@@ -334,17 +384,16 @@ rollButton.addEventListener("click", function () {
     if (result >= 4) {
       result = 0;
       //rolling a 4+ means they don't move for CURRENT TURN
-      messageDiv.textContent +=
-        player.name + "'s cycle restriction blocked the move.\n";
+      showMessage(player.name + "'s cycle restriction blocked the move.");
     }
 
     player.cycleRestriction = false;
     //clear the flag back to false because the restriction only lasts one turn
   }
 
-  messageDiv.textContent += "Rolled a " + originalResult + "\n";
+  showMessage("Rolled a " + originalResult);
   //log the number the player rolled not the overrirden one
-  messageDiv.textContent += player.name + "'s turn\n";
+  showMessage(player.name + "'s turn");
   //log whose turn it is
 
   //movement
@@ -353,8 +402,7 @@ rollButton.addEventListener("click", function () {
   //const because it is set once the old pos does not change
   player.position = (player.position + result) % boardSize;
   //moves the player
-  messageDiv.textContent +=
-    player.name + " is now on position " + player.position + "\n";
+  showMessage(player.name + " is now on position " + player.position);
   //writes to message div where the player landed
 
   //token movement
@@ -370,7 +418,7 @@ rollButton.addEventListener("click", function () {
   //pass home bonus check
   if (player.position < oldPosition) {
     player.balance = player.balance + 200;
-    messageDiv.textContent += player.name + " passed Home. + £200\n";
+    showMessage(player.name + " passed Home. + £200");
     //there is no need for an else if the player didn pass home there is nothing to do
   }
 
@@ -407,13 +455,13 @@ rollButton.addEventListener("click", function () {
     //reduce rent from current player
     landedSquare.owner.balance = landedSquare.owner.balance + landedSquare.rent;
     //add rent money to the current owner balance
-    messageDiv.textContent +=
+    showMessage(
       player.name +
-      " paid £" +
-      landedSquare.rent +
-      " rent to " +
-      landedSquare.owner.name +
-      "\n";
+        " paid £" +
+        landedSquare.rent +
+        " rent to " +
+        landedSquare.owner.name,
+    );
     //message to show
 
     //call method
@@ -455,10 +503,9 @@ rollButton.addEventListener("click", function () {
     if (player.position < currentStation) {
       player.balance += 200;
       //if they passed Home give the player 200
-      messageDiv.textContent += player.name + " passed Home. + £200\n";
+      showMessage(player.name + " passed Home. + £200");
     }
-    messageDiv.textContent +=
-      player.name + " teleported to station " + player.position + "\n";
+    showMessage(player.name + " teleported to station " + player.position);
     //log teleport
 
     //After the property checks and a cycle can never be a station so there are no collisions
@@ -466,18 +513,22 @@ rollButton.addEventListener("click", function () {
     //if the player lands on a cycle square
     player.cycleRestriction = true;
     //flag the player their next roll will be restricted
-    messageDiv.textContent +=
-      player.name + " landed on a cycle square. Next roll restricted.\n";
+    showMessage(
+      player.name + " landed on a cycle square. Next roll restricted.",
+    );
     //log the future restriction
   }
 
-  if (playerList.includes(player)) {
-    currentPlayer = (currentPlayer + 1) % playerList.length;
-  } else {
-    //current player went bankrupt now they are gone from the playerList
-    if (currentPlayer >= playerList.length) {
-      currentPlayer = 0;
+  if (buyPromptDiv.classList.contains("hidden")) {
+    if (playerList.includes(player)) {
+      currentPlayer = (currentPlayer + 1) % playerList.length;
+    } else {
+      //current player went bankrupt now they are gone from the playerList
+      if (currentPlayer >= playerList.length) {
+        currentPlayer = 0;
+      }
     }
+    turnIndicatorDiv.textContent = playerList[currentPlayer].name + "'s turn";
   }
 
   //After turn check if there is anyone left on the list
@@ -490,20 +541,19 @@ rollButton.addEventListener("click", function () {
 
   //refresh player info display
   playerInfoDiv.textContent = playerList
+    //DOM reference
     .map(
       (p) =>
         p.name +
+        //method on arrays
+        //takes and runs a function on every element and returns a new array containing results
+        //.map() is turning each player object into a string
         ": £" +
-        Math.floor(p.balance) +
-        " cash | £" +
-        Math.floor(calculateAssets(p)) +
-        " total",
+        Math.floor(p.balance),
     )
     .join("\n");
-  //tuurns array of player objects into an array of strings
-  //joins them with a newline
-  //asigns the result to playerInfoDiv.textContent
-  //after every roll the player-info panal shows all the balances for each player
+  //after every roll the player-info panel shows all the balances for each player
+  //just balance now, no total assets
 
   //reveal End Game button after the first roll
   if (actionsDiv.classList.contains("hidden")) {
@@ -519,17 +569,22 @@ buyYesButton.addEventListener("click", function () {
     //new owner balance after buyiing the property
     pendingProperty.owner = pendingBuyer;
     //set the property's owner
-    messageDiv.textContent +=
+
+    squares[pendingBuyer.position].style.border =
+      "3px solid " + pendingBuyer.color;
+    //coloured boarder on squares shows who owns this square
+    //overrides css rule when player buys property with thier token colour
+
+    showMessage(
       pendingBuyer.name +
-      " bought " +
-      pendingProperty.name +
-      " for £" +
-      pendingProperty.price +
-      "\n";
+        " bought " +
+        pendingProperty.name +
+        " for £" +
+        pendingProperty.price,
+    );
     //message to show they have bought the property
   } else {
-    messageDiv.textContent +=
-      pendingBuyer.name + " cannot afford " + pendingProperty.name + "\n";
+    showMessage(pendingBuyer.name + " cannot afford " + pendingProperty.name);
     //can't afford case if they click yes without being able to afford it
   }
   buyPromptDiv.classList.add("hidden");
@@ -537,38 +592,57 @@ buyYesButton.addEventListener("click", function () {
   rollButton.disabled = false;
   //game resumes so next player can roll
 
+  //refresh player info display
   playerInfoDiv.textContent = playerList
+    //DOM reference
     .map(
       (p) =>
         p.name +
+        //method on arrays
+        //takes and runs a function on every element and returns a new array containing results
+        //.map() is turning each player object into a string
         ": £" +
-        Math.floor(p.balance) +
-        " cash | £" +
-        Math.floor(calculateAssets(p)) +
-        " total",
+        Math.floor(p.balance),
     )
     .join("\n");
+  //after every roll the player-info panel shows all the balances for each player
+  //just balance now, no total assets
+
+  currentPlayer = (currentPlayer + 1) % playerList.length;
+  //roll handler doesn't advance when the prompt is showing anymore
+  //the buy handler now has to do it
+
+  turnIndicatorDiv.textContent = playerList[currentPlayer].name + "'s turn";
 });
 
 buyNoButton.addEventListener("click", function () {
-  messageDiv.textContent +=
-    pendingBuyer.name + " does not want to buy " + pendingProperty.name + "\n";
+  showMessage(
+    pendingBuyer.name + " does not want to buy " + pendingProperty.name,
+  );
   buyPromptDiv.classList.add("hidden");
   //hide the prompt
   rollButton.disabled = false;
   //game resumes so the next player can roll
 
+  //refresh player info display
   playerInfoDiv.textContent = playerList
+    //DOM reference
     .map(
       (p) =>
         p.name +
+        //method on arrays
+        //takes and runs a function on every element and returns a new array containing results
+        //.map() is turning each player object into a string
         ": £" +
-        Math.floor(p.balance) +
-        " cash | £" +
-        Math.floor(calculateAssets(p)) +
-        " total",
+        Math.floor(p.balance),
     )
     .join("\n");
+  //after every roll the player-info panel shows all the balances for each player
+  //just balance now, no total assets
+
+  currentPlayer = (currentPlayer + 1) % playerList.length;
+  //same reasons for adding this line at the end of the buyYesButoon handler
+  turnIndicatorDiv.textContent = playerList[currentPlayer].name + "'s turn";
 });
 
 //Event listener for endGameButton
@@ -576,7 +650,8 @@ endGameButton.addEventListener("click", function () {
   //end game button
   declareWinner();
 });
-//Event Listener for restart game
+//E
+// vent Listener for restart game
 restartButton.addEventListener("click", function () {
   restartGame();
 });
@@ -613,13 +688,13 @@ function handleBankruptcy(player) {
     cheapest.owner = null;
     //property goes back to being unowned
 
-    messageDiv.textContent +=
-      player.name +
-      " sold " +
-      cheapest.name +
-      " for £" +
-      cheapest.price / 2 +
-      "\n";
+    squares[squareData.indexOf(cheapest)].style.border = "";
+    //clears boarder to grey in case property is gone from the player
+    //in cases like bankruptcy
+
+    showMessage(
+      player.name + " sold " + cheapest.name + " for £" + cheapest.price / 2,
+    );
     //log the sale
   }
 
@@ -635,8 +710,7 @@ function handleBankruptcy(player) {
     player.token.remove();
     //takes the bankrupt player's token off the board
 
-    messageDiv.textContent +=
-      player.name + " is bankrupt and out of the game.\n";
+    showMessage(player.name + " is bankrupt and out of the game.");
     //log the removal of the bankrupt player
   }
 }
@@ -694,7 +768,6 @@ function declareWinner() {
     //use names
     //this is to fix the odd phrasing when there are 2 players
 
-    messageDiv.textContent += "Game over. It's a tie between " + names + "!\n";
     winnerTextP.textContent =
       "It's a tie! " +
       names +
@@ -702,8 +775,6 @@ function declareWinner() {
       Math.floor(highestAssets) +
       " each.\n";
   } else {
-    messageDiv.textContent += "Game over, " + winner.name + " wins. !\n";
-    //log to record the winner with their balance
     winnerTextP.textContent =
       "Congratulations " +
       winner.name +
@@ -734,6 +805,7 @@ function restartGame() {
   messageDiv.classList.add("hidden");
   playerInfoDiv.classList.add("hidden");
   actionsDiv.classList.add("hidden");
+  turnIndicatorDiv.classList.add("hidden");
   winnerDiv.classList.add("hidden");
   //game screen disappears
   setupDiv.classList.remove("hidden");
@@ -742,8 +814,13 @@ function restartGame() {
   playerInfoDiv.textContent = "";
   winnerTextP.textContent = "";
   //leaves the button
-  boardDiv.innerHTML = "";
-  //the innerHTML clears all child elements
+
+  for (const sq of squares) {
+    sq.remove();
+  }
+  //remove only ssquare elements
+  //the h1 stays as the child class
+
   playerList = [];
   //fresh player list
   squareData = [];
