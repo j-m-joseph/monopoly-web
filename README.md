@@ -1,6 +1,6 @@
 # Monopoly Web
 
-A browser-based Monopoly game built with plain JavaScript. Live at [URL coming soon].
+A browser-based Monopoly game built with plain JavaScript. Live at https://j-m-joseph.github.io/monopoly-web/.
 
 ## What it is
 
